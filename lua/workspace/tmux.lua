@@ -9,7 +9,7 @@ function M.manage_session(project_path, workspace, options)
       os.execute("mkdir -p " .. project_path)
     end
   else
-    project_name = project_path:match("./([^/]+)$");
+    project_name = project_path:match("./([^/]+)$")
   end
 
   local session_name = options.tmux_session_name_generator(project_name, workspace.name)
@@ -27,6 +27,16 @@ function M.manage_session(project_path, workspace, options)
   os.execute("tmux switch-client -t " .. session_name)
 end
 
+function M.attach_or_create(session_name, project_path)
+  local tmux_session_check = os.execute("tmux has-session -t=" .. session_name .. " 2> /dev/null")
+  if tmux_session_check == 0 then
+    os.execute("tmux switch-client -t " .. session_name)
+  else
+    os.execute("tmux new-session -s " .. session_name .. " -c " .. project_path .. " nvim")
+    os.execute("tmux switch-client -t " .. session_name)
+  end
+end
+
 function M.attach(session_name)
   local tmux_session_check = os.execute("tmux has-session -t=" .. session_name .. " 2> /dev/null")
   if tmux_session_check == 0 then
@@ -34,9 +44,21 @@ function M.attach(session_name)
   end
 end
 
+function M.has_session(session_name)
+  local tmux_session_check = os.execute("tmux has-session -t=" .. session_name .. " 2> /dev/null")
+  return tmux_session_check == 0
+end
+
+function M.delete_session(session_name)
+  local tmux_session_check = os.execute("tmux has-session -t=" .. session_name .. " 2> /dev/null")
+  if tmux_session_check == 0 then
+    os.execute("tmux kill-session  -t " .. session_name)
+  end
+end
+
 function M.is_running()
   local tmux_running = os.execute("pgrep tmux > /dev/null")
-  local in_tmux = vim.fn.exists('$TMUX') == 1
+  local in_tmux = vim.fn.exists("$TMUX") == 1
   if tmux_running == 0 and in_tmux then
     return true
   end
